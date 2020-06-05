@@ -1,0 +1,72 @@
+<!-- 
+  "[formGroup]" representa el conjunto de elementos de un formulario. Se 
+  asocia, en este caso, a una variable llamada "fg" que se define en el 
+  código del componente.
+  "(ngSubmit)" llama, cuando se hace un submit del formulario, a la función 
+  "guardar" del componente, pasándole como parámetros, a través de la variable 
+  "fg", los valores de los elementos del formulario "nombre" y "url" 
+  (asociados a través de "[formControl]").
+-->
+<form
+  [formGroup]="fg"
+  (ngSubmit)="guardar(fg.controls['nombre'].value, fg.controls['url'].value)"
+  >
+  <div class="form-group">
+    <label for="nombre">Nombre</label>
+    <!-- 
+      "[formControl]" permite definir una especie de equivalente a una 
+      variable de plantilla que, también, representa al objeto DOM que 
+      referencia a este "input". Para ello, se usa el objeto "controls" 
+      (que es un diccionario de controles del formulario) del "[formGroup]" 
+      ("fg") y se asocia a uno de los identificadores definidos en el código 
+      del controlador para los controles del FormGroup ('nombre', en este 
+      caso). De esta manera, "fg.controls['nombre']" queda vinculado a este 
+      "input" y se puede llamar, por ejemplo, a 
+      "fg.controls['nombre'].value" directamente.
+    -->
+    <input type="text" class="form-control" id="nombre" placeholder="Ingresar nombre..." 
+            [formControl]="fg.controls['nombre']">
+    <!-- Autocompleatado del nombre. Se renderiza una lista de nombres. -->
+    <ul>
+      <li *ngFor="let nameResult of searchResults;">{{nameResult}}</li>
+    </ul>
+    <!-- 
+      Si el control nombre no es válido se muestra un mensaje explicativo. 
+      Se comenta porque es una validación muy general y se va a sustituír 
+      por dos validaciones personalizadas. 
+    -->
+    <!-- 
+    <div *ngIf="!fg.controls['nombre'].valid">¡Nombre no válido!</div> 
+    -->
+    <!-- 
+      Si la validación de obligatoriedad del campo no se cumple, se muestra 
+      un mensaje informativo. El parámetro de la función "hasError(param)" 
+      debe coincidir exactamente, en su denominación, con el validador 
+      definido en el componente (en este caso, 
+      Validators.required <==> hasError('required')). 
+    -->
+    <div *ngIf="fg.controls['nombre'].hasError('required')">¡Nombre requerido!</div>
+    <!-- 
+      Validaciones personalizadas: Nombre incorrecto (entre 1 y 4 caracteres) 
+      y longitud. Ojo! Angular ya trae validadores para casos de longitud pero 
+      se usarán los personalizados a modo de ejemplo. Además, el validador de 
+      longitud mínima (minLongNombre) se define como parametrizable en el 
+      componente, aunque en la plantilla, al usarlos, no se vea diferencia.
+    -->
+    <div *ngIf="fg.controls['nombre'].hasError('invalidNombre')">¡Nombre no válido!</div>
+    <div *ngIf="fg.controls['nombre'].hasError('minLongNombre')">
+      ¡El nombre debe tener, al menos, {{minLongitud}} caracteres de longitud!
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="Imagen Url">Imagen Url</label>
+    <input type="text" class="form-control" id="imagenUrl" placeholder="Ingresar url..."
+            [formControl]="fg.controls['url']">
+  </div>
+  <!-- 
+    Al enviar el formulario, se capturará el "submit" y se llamará a la 
+    función definida por "[ngSubmit]".
+    Sólo se renderiza el botón de guardar si las validaciones son correctas.
+  -->
+  <button type="submit" class="btn btn-primary" *ngIf="fg.valid">Guardar!</button>
+</form>

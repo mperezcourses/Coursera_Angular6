@@ -1,29 +1,3 @@
-<!-- Se mantiene el código de los ejemplos anteriores comentado -->
-<!--<div class="container content">
-  <div class="row">
--->    <!-- 
-         Se recorre la lista de destinos de viaje. Se establece la variable 
-         "nombre" de "destino-viaje-component.ts" (ya que está anotada con 
-         "@Input()") al valor seleccionado en cada iteración del *ngFor (destino).
-    -->
-<!--<p>Destinos:</p>
-    <app-destino-viaje *ngFor="let destino of destinos" [nombre]="destino"></app-destino-viaje>
-
-    <hr class="mt-3 mb-3">
--->
-    <!-- Lo mismo pero usando una lista. -->
-<!--<div>
-      <p>Listado de destinos:</p>
-      <ul>
-        <li *ngFor="let destino of destinos">
-          <app-destino-viaje [nombre]="destino" class="d-block"></app-destino-viaje>
-        </li>
-      </ul>
-    </div>
-  </div>
-</div>
--->
-
 <div class="container content">
   <div  class="row">
     <div class="col-md-6 offset-md-3">
@@ -34,26 +8,44 @@
           <h3 class="mb-0">Whishlist</h3>
         </div>
         <div class="card-body">
+        <!-- 
+          Ahora el formulario va en el componente FormDestinoViaje, por lo 
+          que se comenta.
+        -->
+        <!--
           <form>
             <div class="form-group">
               <label for="nombre">Nombre</label>
+        -->
               <!-- 
                    "#nombre" indica una variable de plantilla, es decir, que en
                    el resto de la plantilla se podrá usar una variable "nombre" 
                    que represente al objeto DOM que referencia a este "input".
               -->
+        <!--
               <input type="text" class="form-control" id="nombre" placeholder="Ingresar nombre..." #nombre>
             </div>
             <div class="form-group">
               <label for="Imagen Url">Imagen Url</label>
               <input type="text" class="form-control" id="imagenUrl" placeholder="Ingresar url..." #url>
             </div>
+        -->
             <!-- 
-                 "(click)" es un manejador para el evento "click", que llama a 
-                 la funcion "guardar()" de "lista-destinos.component.ts".
+                 "(click)" captura la ocurrencia de un evento "click" y llama 
+                 a la funcion "guardar()" de "lista-destinos.component.ts".
             -->
+        <!--
             <button type="submit" class="btn btn-primary" (click)="guardar(nombre.value, url.value)">Guardar!</button>
           </form>
+        -->
+        <!-- 
+          El formulario ahora se obtiene del componente FormDestinoViaje. 
+          Cuando se añade un nuevo destino de viaje desde el componente 
+          formulario, se emite el evento "onItemAdded", que se captura aquí y 
+          llama a la función "agregar($event)", pasándole el destino de viaje 
+          a añadir.
+        -->
+        <app-form-destino-viaje (onItemAdded)="agregar($event)"></app-form-destino-viaje>
         </div>
       </div>
     </div>
@@ -65,9 +57,49 @@
     <!-- 
          '[destino]="dest"' guarda en la variable "destino" del componente 
          "destino-viaje.component" el valor de la iteración actual ("dest") 
-         sobre la lista de destinos ("destinos").
+         sobre la lista de destinos ("destinosApiClient.getAll()").
+         Se guarda, también, en la variable "posicion" del componente 
+         "destino-viaje.component" el número de iteración actual (index), 
+         sumándole 1 porque comienza en 0. La variable en el componente es 
+         "posicion" pero en el "@Input" está renombrada como "indice", por 
+         lo que en las plantillas, al definir su valor, hay que usar "indice".
+         Cuando se captura el evento "clicked" (definido en el componente 
+         "destino-viaje") se llama a una función, pasándole como argumento 
+         el destino actual en el *ngFor. Es equivalente tanto pasar a esta 
+         función el argumento del destino actual ("dest") como pasar el 
+         elemento especial "$event", el cual se corresponde con el elemento 
+         que, en el código, se envía al lanzar el evento, en este caso 
+         "this.destino" o, lo que es lo mismo, el "dest" actual del *ngFor 
+         porque se está pasando el valor "dest" al "@Input() destino" 
+         ([destino]="dest"). Por lo tanto, se podría haber puesto 
+         '(clicked)="elegir($event)"'.
     -->
-    <app-destino-viaje *ngFor="let dest of destinos" [destino]="dest"></app-destino-viaje>
+    <app-destino-viaje 
+            *ngFor="let dest of destinosApiClient.getAll(); let idx = index" 
+            [destino]="dest"
+            [indice]="idx + 1"
+            (clicked)="elegido(dest)">
+    </app-destino-viaje>
+  <!-- 
+    Como ya no se usa la lista de destinos en ListaDestinosComponent, 
+    sino DestinosApiClient, se comenta esta versión antigua.
+  -->
+  <!--
+    <app-destino-viaje 
+            *ngFor="let dest of destinos; let idx = index" 
+            [destino]="dest"
+            [indice]="idx + 1"
+            (clicked)="elegido(dest)">
+    </app-destino-viaje>
+  -->
+  </div>
+
+  <hr class="mb-5">
+
+  <div class="row">
+    <h5>Seleccionados:</h5>
+    <ul>
+      <li *ngFor="let u of updates;">{{u}}</li>
+    </ul>
   </div>	
 </div>
-

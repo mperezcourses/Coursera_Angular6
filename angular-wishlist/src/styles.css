@@ -1,4 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
+/* You can add global styles to this file, and also import other style files.
+   The file "angular.json" defines an array of style files to add to the 
+   global context of the project (https://angular.io/guide/workspace-config#additional-build-and-test-options):
+      "styles": [
+        "src/styles.css"
+      ] 
+*/
 /* Global styles:
       p {
         color: blue;
@@ -12,7 +18,7 @@
       @import url("assets/lib/leaflet/leaflet.css");
       @import url("https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css");
 */
-/*The '~' is an alias set on the webpack config pointing to the assets folder*/
+/* The '~' denotes that the import is pointing to the node_modules folder */
 @import "~bootstrap/dist/css/bootstrap.css";
 
 /* card details start  */

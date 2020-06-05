@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, HostBinding } from '@angular/core';
+import { Component, OnInit, Input, HostBinding, EventEmitter, Output } from '@angular/core';
 import { DestinoViaje } from '../models/destino-viaje.model';
 
 @Component({
@@ -10,13 +10,20 @@ export class DestinoViajeComponent implements OnInit {
 
   /*
    * Variable del componente. Se emplea en "destino-viaje.component.html".
-   * La anotación "@Input()" define que el valor de la variable "nombre" se 
-   * puede establecer desde la plantilla (no se necesita, por ejemplo, hacer 
-   * un "this.nombre = 'NombreEjemplo'" desde el constructor o desde un 
-   * método "set('NombreEjemplo')").
+   * El decorador "@Input()" define que se trata de una comunicacion desde 
+   * un componente padre cara este componente, que actua como hijo. El valor 
+   * de la variable "destino" se puede establecer desde la plantilla (no se 
+   * necesita, por ejemplo, hacer un "this.destino = new DestinoViaje(...)" 
+   * desde el constructor o desde un metodo "set(new DestinoViaje(...))").
    */
-  //@Input() nombre: String;
   @Input() destino: DestinoViaje;
+
+  /*
+   * Posicion que ocupa el destino de viaje en la lista de destinos de viaje.
+   * Se renombra como "indice" para ser usado con ese nombre al establecer 
+   * su valor en las plantillas ([indice]="valor").
+   */
+  @Input("indice") posicion: number;
 
   /*
    * "@HostBinding()" vincula una definicion de atributo al tag HTML que 
@@ -30,9 +37,40 @@ export class DestinoViajeComponent implements OnInit {
    */
   @HostBinding('attr.class') cssClass = "col-md-4"; //class="col-md-4"
 
-  constructor() { }
+  /*
+   * La propiedad "clicked" es de tipo EventEmitter, por lo que puede emitir 
+   * eventos. En este caso, se define que al lanzarse el evento se envia un 
+   * elemento de tipo DestinoViaje.
+   * El decorador "@Output()" define que se trata de una comunicacion, a 
+   * traves de la emision y captura de eventos, desde este componente, que 
+   * actua como hijo y que genera y lanza un evento con la informacion que 
+   * quiere compartir, cara un componente padre, que captura el evento y 
+   * extrae de el la informacion que le envia este componente. Permite 
+   * que se use el evento "clicked" en las plantillas de un componente padre 
+   * en el proyecto. Por ejemplo, para llamar a una funcion del componente 
+   * padre "miFuncion(destino: DestinoViaje)" cuando se captura el evento, 
+   * se haria: 
+   *   <app-destino-viaje ... (clicked)="miFuncion($event)">
+   *     ...
+   *   </app-destino-viaje>
+   */
+  @Output() clicked: EventEmitter<DestinoViaje>;
+
+  constructor() {
+    this.clicked = new EventEmitter<DestinoViaje>();
+  }
 
   ngOnInit() {
+  }
+
+  /**
+   * Lanza un evento "clicked" con el destino que actualmente maneja el 
+   * componente.
+   */
+  ir() {
+    this.clicked.emit(this.destino);
+
+    return false; //Para que no recargue la pagina
   }
 
 }

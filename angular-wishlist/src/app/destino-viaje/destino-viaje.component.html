@@ -1,21 +1,60 @@
-<!-- Se mantiene el código de los ejemplos anteriores comentado -->
-<!--
-<p>
-  {{nombre}}
-</p>
--->
-
-<!--<div class="col-md-4">-->
-  <div class="card-content">
-    <div class="card-img">
-      <img src="https://placeimg.com/380/230/nature" alt="">
-      <span><h4>{{destino.nombre}}</h4></span>
-    </div>
-    <div class="card-desc">
-      <h3>{{destino.nombre}}</h3>
-      <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Laboriosam, voluptatum! Dolor quo, perspiciatis voluptas totam</p>
-      <a href="#" class="btn-card">Read</a>
-    </div>
+<div class="card-content">
+  <div class="card-img">
+    <img src="https://placeimg.com/380/230/nature" alt="">
+    <span><h4>{{posicion}}</h4></span>
   </div>
-<!--</div>-->
-
+  <div class="card-desc">
+    <h3>{{destino.nombre}}</h3>
+    <h3>id={{destino.getId()}}</h3>
+    <p>Servicios:</p>
+    <ul>
+      <li *ngFor="let servicio of destino.servicios">
+        <!-- 
+          Directiva "ngSwitch". Equivalente a switch/case en otros 
+          lenguajes. Se define el elemento a comparar 
+          ([ngSwitch]="servicio") y se compara en las siguientes "ramas" 
+          "*ngSwitchCase" (puede haber tantas como se desee). Por 
+          ejemplo, como se define *ngSwitchCase="'Desayuno'", si el valor 
+          del "servicio" es igual al String "Desayuno" (ojo a las comillas 
+          simples en *ngSwitchCase="'Desayuno'", que indican que el valor 
+          "Desayuno" es un String), se realiza el markup definido para ese 
+          caso (en este caso, se imprime "Desayuno" en rojo). Si se define 
+          un "*ngSwitchDefault", los valores que no se correspondan con los 
+          definidos en algún "*ngSwitchCase" realizarán lo definido en esta 
+          "rama" (en este caso, se imprime el valor del servicio).
+        -->
+        <span [ngSwitch]="servicio">
+          <i *ngSwitchCase="'Desayuno'" style="color: red;">{{servicio}}</i>
+          <i *ngSwitchDefault>{{servicio}}</i>
+        </span>
+      </li>
+    </ul>
+    <!--
+      Cuando se pulsa en el botón (link "<a>...</a>") se llama al metodo 
+      "ir()" del componente, que marca al objeto "destino" (de tipo 
+      DestinoViaje) del componente como seleccionado. La marca de 
+      "seleccionado" se muestra sólo en los elementos que están 
+      seleccionados, mediante la modificacion de la propiedad CSS "display" 
+      del <span>.
+    -->
+    <a href="#" class="btn-card" (click)="ir()">Ir!</a>
+    <!--
+    <span [style.display]="destino.isSelected() ? '' : 'none'">- SELECCIONADO -</span>
+    -->
+    <!-- 
+      En vez de jugar con la propiedad "display", es mejor usar un *ngIf. 
+      Si "destino.isSelected()" es "true", se muestra la marca de selección.
+     -->
+    <span *ngIf="destino.isSelected()">- SELECCIONADO -</span>
+    <!-- 
+      Si se desea imprimir algún valor que entra en colflicto con algún 
+      elemento de la sintaxis de las plantillas, se puede usar la directiva 
+      "ngNonBindable". Por ejemplo, el siguiente markup imprime el String 
+      "valor" entre dobles llaves, lo que, de no usar "ngNonBindable", daría 
+      un error porque no existe la variable "valor".
+    -->
+    <span ngNonBindable>{{valor}}</span>
+    <!-- Link a una de las rutas definidas en "app.module.ts" -->
+    <a [routerLink]="['/destino', destino.getId()]">Ver Detalle</a>
+  </div>
+</div>

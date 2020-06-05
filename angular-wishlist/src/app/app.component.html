@@ -1,3 +1,18 @@
+<!-- 
+  Links para las rutas. Los "[routerLink]" reciben una dirección de 
+  redirección que coincide con alguno de los "paths" definidos 
+  en las rutas.
+-->
+<div class="page-header">
+  <div class="container">
+    <h1>Ruteo Simple</h1>
+    <div class="navLinks">
+      <a [routerLink]="['/home']">Home</a>
+      <a [routerLink]="['/destino']">Destino</a>
+    </div>
+  </div>
+</div>
+
 <div class="container content">
   <div class="row">
     <h1>
@@ -5,6 +20,29 @@
     </h1>
   </div>
 
+  <!-- Así sólo se muestra un componente, por lo que se puede decir que 
+       es estático.
+  -->
+  <!--
   <app-lista-destinos></app-lista-destinos>
+  -->
+
+  <!-- Si un componente tiene un módulo asociado donde se registran 
+       una serie de rutas, se puede usar el tag "<router-outlet>" para que 
+       se muestren los componentes definidos en las rutas, por lo que se 
+       puede decir que actúa como un contenedor dinámico, incrustando el 
+       componente adecuado para cada ruta.
+  -->
+  <router-outlet></router-outlet>
+
+  <hr class="mb-5">
+
+  <!-- 
+    Hora actual. Renderizado diferido de HTML a través de intervalos.
+    "async" permite que el motor de plantillas de Angular se mantenga 
+    al tanto de los cambios en la variable "fecha" y los redibuje en 
+    la plantilla.
+  -->
+  <span>Fecha: {{fecha | async}}</span>
 </div>
 
