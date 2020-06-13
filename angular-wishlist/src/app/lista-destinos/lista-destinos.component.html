@@ -73,12 +73,16 @@
          porque se está pasando el valor "dest" al "@Input() destino" 
          ([destino]="dest"). Por lo tanto, se podría haber puesto 
          '(clicked)="elegir($event)"'.
+         Si se captura el evento "borrarDestinoEvent", se llama a la función 
+         que realiza el proceso de borrado del destino que se ha elegido 
+         borrar.
     -->
     <app-destino-viaje 
             *ngFor="let dest of destinosApiClient.getAll(); let idx = index" 
             [destino]="dest"
             [indice]="idx + 1"
-            (clicked)="elegido(dest)">
+            (clicked)="elegido(dest)"
+            (borrarDestinoEvent)="borrarDestino(dest)">
     </app-destino-viaje>
   <!-- 
     Como ya no se usa la lista de destinos en ListaDestinosComponent, 

@@ -56,8 +56,11 @@ export class DestinoViajeComponent implements OnInit {
    */
   @Output() clicked: EventEmitter<DestinoViaje>;
 
+  @Output() borrarDestinoEvent: EventEmitter<DestinoViaje>;
+
   constructor() {
     this.clicked = new EventEmitter<DestinoViaje>();
+    this.borrarDestinoEvent = new EventEmitter<DestinoViaje>();
   }
 
   ngOnInit() {
@@ -65,10 +68,20 @@ export class DestinoViajeComponent implements OnInit {
 
   /**
    * Lanza un evento "clicked" con el destino que actualmente maneja el 
-   * componente.
+   * componente y que se desea que se marque como favorito.
    */
   ir() {
     this.clicked.emit(this.destino);
+
+    return false; //Para que no recargue la pagina
+  }
+
+  /**
+   * Lanza un evento "borrarDestinoEvent" con el destino que actualmente 
+   * maneja el componente y que se desea borrar.
+   */
+  procesarBorradoDestino() {
+    this.borrarDestinoEvent.emit(this.destino);
 
     return false; //Para que no recargue la pagina
   }

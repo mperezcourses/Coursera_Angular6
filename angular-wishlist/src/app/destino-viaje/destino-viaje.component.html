@@ -56,5 +56,8 @@
     <span ngNonBindable>{{valor}}</span>
     <!-- Link a una de las rutas definidas en "app.module.ts" -->
     <a [routerLink]="['/destino', destino.getId()]">Ver Detalle</a>
+    <br>
+    <!-- Boton de borrado. Al pulsarlo llama a la logica de borrado. -->
+    <a href="#" class="btn-card" (click)="procesarBorradoDestino()">Borrar!</a>
   </div>
 </div>

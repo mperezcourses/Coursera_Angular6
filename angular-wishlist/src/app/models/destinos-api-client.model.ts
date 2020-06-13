@@ -44,6 +44,12 @@ export class DestinosApiClient {
     this.destinos.push(d);
   }
 
+  remove(d: DestinoViaje) {
+    //TODO: Buscar un metodo mas eficiente
+    this.destinos = this.destinos.filter(item => 
+      item.getId() !== d.getId());
+  }
+
   getById(id: String): DestinoViaje {
     return this.destinos.filter(
       function(d) { 
