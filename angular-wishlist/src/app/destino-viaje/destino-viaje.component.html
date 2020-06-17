@@ -29,6 +29,20 @@
         </span>
       </li>
     </ul>
+    <!-- Iconos de voto -->
+    <div>
+      <a href="#" (click)="voteUp()">
+        <i class="material-icons md-18">thumb_up</i>
+      </a>
+      <span>{{destino.getVotosPositivos()}}</span>
+      <a href="#" (click)="votesReset()">
+        <i class="material-icons md-18">settings_backup_restore</i>
+      </a>
+      <a href="#" (click)="voteDown()">
+        <i class="material-icons md-18">thumb_down</i>
+      </a>
+      <span>{{destino.getVotosNegativos()}}</span>
+    </div>
     <!--
       Cuando se pulsa en el botón (link "<a>...</a>") se llama al metodo 
       "ir()" del componente, que marca al objeto "destino" (de tipo 

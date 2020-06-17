@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Action } from '@ngrx/store';
+import { Action, Store, select } from '@ngrx/store';
 import { Actions, Effect, ofType } from '@ngrx/effects';
 import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, withLatestFrom, concatMap } from 'rxjs/operators';
 import { DestinoViaje } from './destino-viaje.model';
+import { AppState } from '../app.module';
 
 /*
  * Archivo de estado para Redux. Este tipo de archivos permiten gestionar 
@@ -52,7 +53,10 @@ export function initializeDestinosViajesState() {
 export enum DestinosViajesActionTypes {
   NUEVO_DESTINO = '[Destinos Viajes] Nuevo',
   ELEGIDO_FAVORITO = '[Destinos Viajes] Favorito',
-  BORRAR_DESTINO = '[Destinos Viajes] Borrar'
+  BORRAR_DESTINO = '[Destinos Viajes] Borrar',
+  VOTE_UP = '[Destinos Viajes] Vote Up',
+  VOTE_DOWN = '[Destinos Viajes] Vote Down',
+  VOTES_RESET = '[Destinos Viajes] Votes Reset'
 }
 
 /**
@@ -63,14 +67,15 @@ export enum DestinosViajesActionTypes {
  * Valores:
  *   FIRST: Se marca como favorito al primer elemento de la lista
  *   LAST: Se marca como favorito al primer elemento de la lista
- *   NONE: No se marca a ningun elemento como nuevo favorito. Se usa en el 
- *         caso del borrado de un destino de viaje que no esta marcado como 
- *         favorito, por lo que se mantiene el favorito que ya esta marcado.
+ *   SAME: No se marca a ningun elemento como NUEVO favorito. Se mantiene 
+ *         el favorito que ya esta marcado.
+ *   NONE: No debe haber ningun favorito. En caso de haberlo, se desmarca. 
  */
 export enum FavoritePosition {
   FIRST = 'Primer elemento',
   LAST = 'Ultimo elemento',
-  NONE = 'Mantener favorito actual'
+  SAME = 'Mantener favorito actual',
+  NONE = 'Sin favorito'
 }
 
 /** Accion para generar un nuevo destino de viaje */
@@ -81,12 +86,19 @@ export class NuevoDestinoAction implements Action {
   constructor(public destino: DestinoViaje) {}
 }
 
-/** Accion para el marcado de un destino de viaje como favorito. */
+/**
+ * Accion para el marcado de un destino de viaje como favorito. Puede 
+ * recibir 2 parametros, el destino de viaje a marcar como favorito y, 
+ * como parametro opcional, la posicion del destino de viaje que queremos 
+ * marcar como favorito dentro de la lista de destinos de viaje. Esta 
+ * posicion tiene prevalencia sobre el destino que se especifique, en caso de 
+ * que se usen los dos argumentos.
+ */
 export class ElegidoFavoritoAction implements Action {
   type = DestinosViajesActionTypes.ELEGIDO_FAVORITO;
   // "destino" es el destino de viaje a marcar como favorito
   // La notacion "?" indica que puede ser nulo
-  constructor(public destino: DestinoViaje, public position?: string) {}
+  constructor(public destino?: DestinoViaje, public position?: string) {}
 }
 
 /** Accion para el borrado de un destino de viaje. */
@@ -96,13 +108,35 @@ export class BorrarDestinoAction implements Action {
   constructor(public destino: DestinoViaje) {}
 }
 
+/** Accion para el voto positivo hacia un destino de viaje. */
+export class VoteUpDestinoAction implements Action {
+  type = DestinosViajesActionTypes.VOTE_UP;
+  // "destino" es el destino de viaje a votar positivamente
+  constructor(public destino: DestinoViaje) {}
+}
+
+/** Accion para el voto negativo hacia un destino de viaje. */
+export class VoteDownDestinoAction implements Action {
+  type = DestinosViajesActionTypes.VOTE_DOWN;
+  // "destino" es el destino de viaje a votar negativamente
+  constructor(public destino: DestinoViaje) {}
+}
+
+/** Reinicia los contadores de votos hacia un destino de viaje. */
+export class VotesResetDestinoAction implements Action {
+  type = DestinosViajesActionTypes.VOTES_RESET;
+  // "destino" es el destino de viaje a reiniciar sus contadores de votos
+  constructor(public destino: DestinoViaje) {}
+}
+
 /* 
  * Buena practica. Agrega en un "pipe" todas las acciones necesarias.
  * En este caso, la variable "DestinosViajesActions" es el conjunto de todos 
  * los tipos de datos que son acciones sobre destinos de viaje.
  */
 export type DestinosViajesActions = NuevoDestinoAction | ElegidoFavoritoAction 
-        | BorrarDestinoAction;
+        | BorrarDestinoAction | VoteUpDestinoAction | VoteDownDestinoAction 
+        | VotesResetDestinoAction;
 
 // REDUCERS
 /*
@@ -131,21 +165,62 @@ export function reducerDestinosViajes(
         };
     }
     case DestinosViajesActionTypes.ELEGIDO_FAVORITO: {
+      //console.log("FAVORITO-Items = " + state.items.length);
+      const destinoFav = (action as ElegidoFavoritoAction).destino;
+      const position = (action as ElegidoFavoritoAction).position;
+      
+      if(state.items.length === 0) {
         /*
          * Si al borrar un elemento queda la lista de destinos de viaje 
          * vacia, no se puede marcar como favorito a ningun otro destino 
          * de viaje, por lo que se finaliza el flujo devolviendo el estado 
-         * sin modificar.
+         * sin favorito.
          */
-        if(state.items.length === 0) {
-          return state;
-        }
-
+        return {
+          ...state,
+          favorito: null
+        };
+      }
+      else if(!destinoFav && !position && position !== '0') {
+        /*
+         * Si todavia hay elementos en la lista de destinos de viaje y no se 
+         * ofrece ningun parametro (null, undefined o un valor no valido) a la 
+         * accion, no se hace nada. Por ejemplo, cuando se borra un destino de 
+         * viaje que no estaba seleccionado como favorito, se podria llamar a 
+         * ElegidoFavoritoAction sin parametros para que no modifique el 
+         * favorito actual si todavia quedan elementos en la lista de destinos 
+         * de viaje o para que elimine el elemento favorito si la lista queda 
+         * vacia.
+         * 
+         * El String '0', aun siendo una posicion valida, evalua a true en 
+         * "!position" (!variable --> TRUE para: null, undefined, 0, NaN, 
+         * false o una cadena vacia).
+         */
+        return state;
+      }
+      else if(position === FavoritePosition.NONE) {
+        // Se desea no mantener un favorito
+        return {
+          ...state,
+          favorito: null
+        };
+      }
+      else if(position === FavoritePosition.SAME) {
+        // Si se quiere mantener el favorito, no se hace nada
+        return state;
+      }
+      else if(destinoFav && state.favorito && 
+              destinoFav.getId() === state.favorito.getId()) {
+        // Si el destino de viaje a marcar como favorito es el mismo que 
+        // el que ya es favorito, no se hace nada
+        return state;
+      }
+      else {
         // Aqui se modifica el estado original pero el que se devuelva va a 
         // ser un clon.
-        state.items.forEach(x => x.setSelected(false));
+        //state.items.forEach(x => x.setSelected(false));
         let fav: DestinoViaje;
-        const position = (action as ElegidoFavoritoAction).position;
+        //const position = (action as ElegidoFavoritoAction).position;
 
         if(position === FavoritePosition.FIRST) {
           fav = state.items[0];
@@ -153,28 +228,55 @@ export function reducerDestinosViajes(
         else if(position === FavoritePosition.LAST) {
           fav = state.items[state.items.length - 1];
         }
-        else if(position === FavoritePosition.NONE) {
+        /*else if(position === FavoritePosition.SAME) {
           fav = state.favorito;
-        }
-        else if(!isNaN(+position)) { // Si es un numero, procede
+        }*/
+        else if(!isNaN(+position)) { // Si es un numero, procede.
+
+          /*
+           * Esta rama del if representa los casos en los que, explicitamente, 
+           * se define la posicion, dentro de la lista de destinos de viaje, 
+           * en la que se encuentra el destino de viaje que se desea marcar 
+           * como favorito.
+           */
+
           // parseInt devuelve enteros. Se usa la base 10.
           const numberPosition = parseInt(position, 10);
           // Se comprueba que sea una posicion valida
           if(numberPosition >= 0 && numberPosition <= state.items.length - 1) {
-            fav = state.items[numberPosition];
+            const tempFav: DestinoViaje = state.items[numberPosition];
+            // Si el elemento de la posicion elegida es el mismo que ya es 
+            // favorito, se mantiene el estado actual.
+            if(tempFav && state.favorito && 
+               tempFav.getId() === state.favorito.getId()) {
+              return state;
+            }
+
+            fav = tempFav;
+
+            //fav = state.items[numberPosition];
           }
           else {
             // Si no es una posicion valida, se mantiene el favorito actual
-            fav = state.favorito;
+            //fav = state.favorito;
             // O se cierra el flujo devolviendo el estado actual sin modificar
-            //return state;
+            return state;
           }
         }
         else {
-          // Si no se especfica una posicion, se elige al destino 
+          // Si no se especfica una posicion, se elige el destino 
           // que se pasa a la accion
-          fav = (action as ElegidoFavoritoAction).destino;
+          fav = destinoFav;
         }
+
+        /*
+         * Se marcan todos los destinos de viaje como no favorito para, luego, 
+         * marcar como favorito al escogido.
+         * Aqui se modifica el estado original pero el que se devuelva va a 
+         * ser un clon.
+         */
+        state.items.forEach(x => x.setSelected(false));
+
         //const fav: DestinoViaje = (action as ElegidoFavoritoAction).destino;
         fav.setSelected(true);
         // Se devuelve un estado clon con el item favorito modificado
@@ -182,8 +284,10 @@ export function reducerDestinosViajes(
           ...state,
           favorito: fav
         };
+      }
     }
     case DestinosViajesActionTypes.BORRAR_DESTINO: {
+      //console.log("REDUCER-Items = " + state.items.length);
       const destinoABorrar: DestinoViaje = 
         (action as BorrarDestinoAction).destino;
       // Se recupera la posicion en la lista del destino de viaje a borrar
@@ -219,6 +323,27 @@ export function reducerDestinosViajes(
       };*/
       
     }
+    case DestinosViajesActionTypes.VOTE_UP: {
+      const destino: DestinoViaje = (action as VoteUpDestinoAction).destino;
+      /*
+       * Al modificar el objeto de tipo DestinoViaje, como ese objeto esta 
+       * dentro del estado de la aplicacion, se modifica el estado y, por lo 
+       * tanto, se debe retornar un clon del propio estado.
+       */
+      destino.votarPositivo();
+      return { ...state };
+    }
+    case DestinosViajesActionTypes.VOTE_DOWN: {
+      const destino: DestinoViaje = (action as VoteDownDestinoAction).destino;
+      destino.votarNegativo();
+      return { ...state };
+    }
+    case DestinosViajesActionTypes.VOTES_RESET: {
+      const destino: DestinoViaje = 
+        (action as VotesResetDestinoAction).destino;
+      destino.reiniciarVotos();
+      return { ...state };
+    }
   }
   return state;
 }
@@ -253,20 +378,79 @@ export class DestinosViajesEffects {
   @Effect()
   destinoBorrado$: Observable<Action> = this.actions$.pipe(
     // Accion de tipo BORRAR_DESTINO
+    /* 
+     * NOTA: Se usan comprobaciones del estado que ya estan incluidas en el 
+     * reducer de ElegidoFavoritoAction pero, en este caso, el hacerlas aqui 
+     * hace mas comprensible la logica que se emplea. Es mas, este tipo de 
+     * comprobaciones, si no son comunes, es preferible hacerlas fuera de los 
+     * reducers o estos contendran tantas opciones que dificultaran demasiado 
+     * su codigo. Por ejemplo, en el caso del reducer de 
+     * ElegidoFavoritoAction, se realizan comprobaciones que deben ir en este 
+     * effect y que, como se puede comprobar, provocan que el codigo del 
+     * reducer sea demasiado "engorroso".
+     */
+
     ofType(DestinosViajesActionTypes.BORRAR_DESTINO),
-    // De "BorrarDestinoAction" se lanza "ElegidoFavoritoAction". Si un 
-    // destino favorito se borra, se marca como favorito el ultimo anhadido.
-    map((action: BorrarDestinoAction) => {
+    /*
+     * "withLatestFrom" permite hacer comprobaciones sobre el estado desde los 
+     * effects. Ojo! Tambien se podrian hacer modificaciones sobre el estado 
+     * pero, como los effects no deben hacerlas, serian "invisibles" para la 
+     * aplicacion y llevarian a estados no validos.
+     * Solo se necesita acceder a la lista de destinos de viaje, por lo que 
+     * se selecciona.
+     * Desde la documentacion oficial se recomienda usar un 
+     * "flattening operator" ("concatMap" en este caso) en conjunto con 
+     * "withLatestFrom" para prevenir que el selector ("select(...)") se lance 
+     * hasta que se dispare la accion correcta 
+     * (https://ngrx.io/guide/effects#incorporating-state).
+     * "of(x)" genera un Observable de sus argumentos. Por ejemplo, 
+     * "of(action)" genera el Observable "action" (action$).
+     */
+    concatMap((action: BorrarDestinoAction) => of(action).pipe(
+      withLatestFrom(this.state.pipe(select(estado => estado.destinos.items)))
+    )),
+    // Pero sin el "concatMap" tambien funcionaria
+    //withLatestFrom(this.state.pipe(select(estado => estado.destinos.items))),
+    /* 
+     * De "BorrarDestinoAction" se lanza "ElegidoFavoritoAction". Si un 
+     * destino favorito se borra, se marca como favorito el ultimo anhadido.
+     */
+    map(([action, items]: [BorrarDestinoAction, DestinoViaje[]]) => {
+      //console.log("EFFECT-Items = " + items.length);
       //console.log("Lanzando effect de borrado");
-      if(action.destino.isSelected()) {
+      if(items.length === 0) {
+        /*
+         * Si ya no quedan elementos en la lista de destinos de viaje, no 
+         * tiene sentido que haya un favorito, por lo que se elimina.
+         */
+        //console.log("FavoritePosition.NONE");
+        return new ElegidoFavoritoAction(null, FavoritePosition.NONE);
+      }
+      else if(action.destino.isSelected()) {
+        /* 
+         * Si el destino de viaje borrado era el favorito, se elige al ultimo 
+         * de la lista (el ultimo en anhadirse) como el nuevo favorito.
+         */
         //console.log("FavoritePosition.LAST");
-        return new ElegidoFavoritoAction(action.destino, FavoritePosition.LAST);
+        return new ElegidoFavoritoAction(
+          /*action.destino, */null, FavoritePosition.LAST);
       }
 
-      //console.log("FavoritePosition.NONE");
-      return new ElegidoFavoritoAction(action.destino, FavoritePosition.NONE);
+      /*
+       * El destino de viaje borrado no estaba marcado como favorito y 
+       * todavia quedan elementos en la lista de destinos de viaje, por 
+       * lo que no se modifica el favorito.
+       * No se puede cerrar el flujo directamente ("return;") porque si 
+       * no se devuelve una accion da un error.
+       */
+      //console.log("FavoritePosition.SAME");
+      //return; // No se puede cerrar el flujo directamente.
+      //o
+      //return new ElegidoFavoritoAction();
+      //o
+      return new ElegidoFavoritoAction(null, FavoritePosition.SAME);
     })
   );
 
-  constructor(private actions$: Actions) {}
+  constructor(private actions$: Actions, private state: Store<AppState>) {}
 }

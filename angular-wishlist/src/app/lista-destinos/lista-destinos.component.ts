@@ -1,9 +1,15 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { DestinoViaje } from '../models/destino-viaje.model';
 import { DestinosApiClient } from '../models/destinos-api-client.model';
-import { Store } from '@ngrx/store';
+import { Store, ActionsSubject, select } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { ElegidoFavoritoAction, NuevoDestinoAction, BorrarDestinoAction } from '../models/destinos-viajes-state.model';
+import { ElegidoFavoritoAction, 
+         NuevoDestinoAction, 
+         BorrarDestinoAction, 
+         DestinosViajesActionTypes } from '../models/destinos-viajes-state.model';
+import { Subscription, Subject } from 'rxjs';
+import { ofType, Actions } from '@ngrx/effects';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-lista-destinos',
@@ -20,9 +26,18 @@ export class ListaDestinosComponent implements OnInit {
 
   /**
    * Almacena una lista de frases con los destinos de viaje que se van 
-   * marcando como favoritos.
+   * marcando como favoritos o que se van borrando.
    */
   updates: string[];
+
+  /** Lista de los destinos de viaje que gestiona la aplicacion. */
+  private allDestinosViaje: DestinoViaje[];
+
+  // Observable que permite eliminar la suscripcion a una accion
+  //private suscripcionAcciones = new Subscription();
+
+  // Observable que permite eliminar la suscripcion a una accion
+  private unsubscribeActions$ = new Subject<void>();
 
 /*
   // Se inyecta el servicio Singleton "DestinosApiClient"
@@ -54,7 +69,9 @@ export class ListaDestinosComponent implements OnInit {
    * observables de Redux.
    */
   constructor(private destinosApiClient: DestinosApiClient, 
-          private store: Store<AppState>) {
+          private store: Store<AppState>, 
+          /*private actionsSubject: ActionsSubject*/
+          private actions$: Actions) {
     //this.onItemAdded = new EventEmitter<DestinoViaje>();
     this.updates = [];
     
@@ -74,7 +91,8 @@ export class ListaDestinosComponent implements OnInit {
      * no se acualiza la lista de favoritos, al contrario de lo que sucedia
      * cuando se empleaba la funcion "subscribeOnChange" de DestinosApiClient.
      */
-    this.store.select(store => store.destinos.favorito)
+    //this.store.select(store => store.destinos.favorito) // DEPRECATED
+    this.store.pipe(select(store => store.destinos.favorito))
       .subscribe(data => {
         // El paramero "data" es el DestinoViaje elegido como favorito
         const fav = data;
@@ -82,9 +100,119 @@ export class ListaDestinosComponent implements OnInit {
           this.updates.push("El elemento seleccionado ha sido " + data.nombre);
         }
       });
+
+    /*
+     * "this.store.pipe()" devuelve un Observable, en este caso sobre los 
+     * destinos de viaje que gestiona la aplicacion (se seleccionan solo estos 
+     * de entre todos los objetos que hay en el Store) y se procede a la 
+     * suscripcion a sus cambios. Por lo tanto, cuando se modifica esta lista, 
+     * se llamara a "setAllDestinosViaje" pasandole como argumento la nueva 
+     * lista de destinos de viaje para que se pueda actualizar por pantalla.
+     * Esto permite, por ejemplo, que la DevTools de Redux 
+     * ("@ngrx/store-devtools") sea capaz de mostrar, de manera visual en el 
+     * navegador, una linea temporal donde se van sucediendo los cambios en 
+     * la lista.
+     */
+    this.store.pipe(select(store => store.destinos.items))
+      .subscribe(destinos => this.setAllDestinosViaje(destinos));
+    
+    /*
+     * Ejemplo de suscripcion a una accion desde un componente.
+     * Este ejemplo permite que un bloque de codigo se ejecute una 
+     * vez se ha completado la accion.
+     * Ojo! Esto se ejecuta despues de los reducers, de los effects 
+     * y de las acciones/reducers/effects que se llamen desde los 
+     * effects de la accion. Por lo tanto, se podria considerar como 
+     * una especie de bloque que se ejecuta despues de finalizar todo 
+     * el proceso directo e indirecto de la accion. Por ejemplo, si 
+     * se incluye este codigo:
+     *
+     *   this.updates.push("El elemento borrado ha sido " + 
+     *     (action as BorrarDestinoAction).destino.nombre);
+     * 
+     * El resultado sera que se incluira el mensaje incluso despues de 
+     * que el effect llame a la accion de seleccionar un favorito (lo 
+     * cual, en este caso, no es el resultado deseado):
+     * 
+     *   El elemento seleccionado ha sido A (se crea A --> Favorito = A)
+     *   El elemento seleccionado ha sido B (se crea B --> Favorito = B)
+     *   El elemento seleccionado ha sido C (se crea C --> Favorito = C)
+     *   El elemento seleccionado ha sido B (se borra C --> Favorito = B)
+     *   El elemento borrado ha sido C (se anota al final del proceso)
+     */
+    /*
+    this.suscripcionAcciones = actionsSubject.pipe(
+      ofType(DestinosViajesActionTypes.BORRAR_DESTINO)
+    ).subscribe((action) => {
+      // Codigo a ejecutar despues de completarse de la accion y sus 
+      // acciones derivadas.
+      this.updates.push("El elemento borrado ha sido " + 
+        (action as BorrarDestinoAction).destino.nombre);
+    });
+    */
+
+    /*
+     * Ejemplo de suscripcion a una accion desde un componente.
+     * Este ejemplo permite que un bloque de codigo se ejecute una 
+     * vez se ha completado la accion.
+     * Se ejecuta despues de los reducers de la accion y antes de las nuevas 
+     * acciones lanzadas por los reducers. Por lo tanto, el mensaje de 
+     * borrado de un destino de viaje se imprimira antes que el del nuevo 
+     * destino de viaje favorito (en caso de haberlo). Por ejemplo, si 
+     * se incluye este codigo:
+     *
+     *   this.updates.push("El elemento borrado ha sido " + 
+     *     (action as BorrarDestinoAction).destino.nombre);
+     * 
+     * Los mensajes mostrados seran: 
+     * 
+     *   El elemento seleccionado ha sido A (se crea A --> Favorito = A)
+     *   El elemento seleccionado ha sido B (se crea B --> Favorito = B)
+     *   El elemento seleccionado ha sido C (se crea C --> Favorito = C)
+     *   El elemento borrado ha sido C (se anota antes del nuevo favorito)
+     *   El elemento seleccionado ha sido B (se borra C --> Favorito = B)
+     */
+    this.actions$.pipe(
+      ofType(DestinosViajesActionTypes.BORRAR_DESTINO),
+      // Se pueden anhadir mas operadores al Observable si es necesario
+      /*
+       * "takeUntil" emite los valores emitidos por el Observable fuente 
+       * (this.actions$) hasta que el Observable argumento 
+       * (this.unsubscribeActions$) emite un valor 
+       * (https://rxjs-dev.firebaseapp.com/api/operators/takeUntil).
+       */
+      takeUntil(this.unsubscribeActions$)
+    )
+    .subscribe((action) => {
+      // Codigo a ejecutar despues de los effects de la accion pero antes de 
+      // otras acciones derivadas.
+      /*this.store.select(store => store.destinos.items).subscribe(items => {
+          console.log("COMPONENT-Items = " + items.length)});*/
+      this.updates.push("El elemento borrado ha sido " + 
+        (action as BorrarDestinoAction).destino.nombre);
+    });
+
+    /*
+     * TODO: Al igual que se registra una frase para los borrados de destinos 
+     * de viaje, registrarla tambien al generar un nuevo destino de viaje.
+     */
   }
 
   ngOnInit() {
+  }
+
+  ngOnDestroy() {
+    /*
+     * Se desinscribe de la suscripcion a las acciones cuando la instancia 
+     * del componente es destruida ("ngOnDestroy()") para que no haya 
+     * fugas de memoria.
+     * Se emite un valor y se completa. De esta manera, el 
+     * "takeUntil(this.unsubscribeActions$)" dejara de emitir eventos y el 
+     * Observable "actions$" no permanecera "abierto".
+     */
+    this.unsubscribeActions$.next();
+    this.unsubscribeActions$.complete();
+    //this.suscripcionAcciones.unsubscribe();
   }
 
   /**
@@ -104,15 +232,31 @@ export class ListaDestinosComponent implements OnInit {
      * en el codigo seria encapsular las llamadas a las acciones desde 
      * DestinosApiClient y que se encargue de todo.
      */
+    // Al realizar la mejora mencionada, ahora la logica de lanzamiento de 
+    // acciones se lleva a cabo en DestinosApiClient. Aunque se va a realizar 
+    // esta llamada, se comenta aqui porque se va a documentar.
+    /*
     this.destinosApiClient.add(destino);
     //this.onItemAdded.emit(destino);
+    */
 
     /*
      * La accion "NuevoDestinoAction" lanza, a traves de un "effect", 
      * una accion "ElegidoFavoritoAction", de manera que el nuevo 
      * destino de viaje se marca como favorito.
      */
-    this.store.dispatch(new NuevoDestinoAction(destino));
+    // Ahora la logica de lanzamiento de acciones se lleva a cabo en 
+    // DestinosApiClient, por lo que ya no es necesaria aqui.
+    //this.store.dispatch(new NuevoDestinoAction(destino));
+
+    /*
+     * Al encapsular las llamadas para disparar las acciones necesarias 
+     * en DestinosApiClient, ya no es necesario hacerlas aqui, sino que 
+     * es suficiente con llamar al metodo especifico de DestinosApiClient. 
+     * Las acciones llamadas desde esos metodos se encargan de realizar 
+     * toda la logica necesaria.
+     */
+    this.destinosApiClient.add(destino);
   }
 
   /**
@@ -131,7 +275,15 @@ export class ListaDestinosComponent implements OnInit {
      * Se lanza una accion de Redux que almacena al elemento 
      * en el estado como favorito.
      */
-    this.store.dispatch(new ElegidoFavoritoAction(dest));
+    // Ahora la logica de lanzamiento de acciones se lleva a cabo en 
+    // DestinosApiClient, por lo que ya no es necesaria aqui.
+    //this.store.dispatch(new ElegidoFavoritoAction(dest));
+
+    /* 
+     * La accion de eleccion de un nuevo destino de viaje favorito 
+     * llamada desde DestinosApiClient realiza todo el proceso.
+     */
+    this.destinosApiClient.elegir(dest);
   }
 
   /**
@@ -140,11 +292,17 @@ export class ListaDestinosComponent implements OnInit {
    * borrar tiene marca de favorito, una vez borrado se marca como 
    * favorito al ultimo destino de viaje anhadido a la lista de 
    * destinos de viaje. En caso de que no tenga marca de favorito, 
-   * se mantiene el elemento favorito actual.
+   * se mantiene el elemento favorito actual. Si al borrar el 
+   * elemento, ya no quedan destinos de viaje en la lista, se establece 
+   * que no hay favorito.
    * 
    * @param dest Destino de viaje a borrar.
    */
   borrarDestino(dest: DestinoViaje) {
+    /* 
+     * La accion de borrado llamada desde DestinosApiClient realiza 
+     * todo el proceso de borrado de un destino de viaje.
+     */
     this.destinosApiClient.remove(dest);
     /*
      * La accion "BorrarDestinoAction" lanza, a traves de un "effect", 
@@ -152,7 +310,17 @@ export class ListaDestinosComponent implements OnInit {
      * se debe marcar como favorito en caso de que el destino a borrar 
      * tenga marca de favorito.
      */
-    this.store.dispatch(new BorrarDestinoAction(dest));
+    // Ahora la logica de lanzamiento de acciones se lleva a cabo en 
+    // DestinosApiClient, por lo que ya no es necesaria aqui.
+    //this.store.dispatch(new BorrarDestinoAction(dest));
+  }
+
+  getAllDestinosViaje(): DestinoViaje[] {
+    return this.allDestinosViaje;
+  }
+
+  setAllDestinosViaje(destinos: DestinoViaje[]) {
+    this.allDestinosViaje = destinos;
   }
 
 }

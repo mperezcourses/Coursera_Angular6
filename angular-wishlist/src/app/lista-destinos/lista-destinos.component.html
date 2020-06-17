@@ -77,12 +77,23 @@
          que realiza el proceso de borrado del destino que se ha elegido 
          borrar.
     -->
+  <!--
     <app-destino-viaje 
             *ngFor="let dest of destinosApiClient.getAll(); let idx = index" 
             [destino]="dest"
             [indice]="idx + 1"
             (clicked)="elegido(dest)"
             (borrarDestinoEvent)="borrarDestino(dest)">
+    </app-destino-viaje>
+  -->
+    <!-- Ahora se usa el Store para obtener la lista de destinos de viaje en 
+         vez de usar "DestinosApiClient.getAll()" -->
+    <app-destino-viaje 
+         *ngFor="let dest of getAllDestinosViaje(); let idx = index" 
+         [destino]="dest"
+         [indice]="idx + 1"
+         (clicked)="elegido(dest)"
+         (borrarDestinoEvent)="borrarDestino(dest)">
     </app-destino-viaje>
   <!-- 
     Como ya no se usa la lista de destinos en ListaDestinosComponent, 
@@ -101,7 +112,7 @@
   <hr class="mb-5">
 
   <div class="row">
-    <h5>Seleccionados:</h5>
+    <h5>Acciones:</h5>
     <ul>
       <li *ngFor="let u of updates;">{{u}}</li>
     </ul>

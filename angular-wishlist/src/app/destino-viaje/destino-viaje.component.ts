@@ -1,5 +1,8 @@
 import { Component, OnInit, Input, HostBinding, EventEmitter, Output } from '@angular/core';
 import { DestinoViaje } from '../models/destino-viaje.model';
+import { Store } from '@ngrx/store';
+import { AppState } from '../app.module';
+import { VoteUpDestinoAction, VotesResetDestinoAction, VoteDownDestinoAction } from '../models/destinos-viajes-state.model';
 
 @Component({
   selector: 'app-destino-viaje',
@@ -58,7 +61,7 @@ export class DestinoViajeComponent implements OnInit {
 
   @Output() borrarDestinoEvent: EventEmitter<DestinoViaje>;
 
-  constructor() {
+  constructor(private store: Store<AppState>) {
     this.clicked = new EventEmitter<DestinoViaje>();
     this.borrarDestinoEvent = new EventEmitter<DestinoViaje>();
   }
@@ -82,6 +85,33 @@ export class DestinoViajeComponent implements OnInit {
    */
   procesarBorradoDestino() {
     this.borrarDestinoEvent.emit(this.destino);
+
+    return false; //Para que no recargue la pagina
+  }
+
+  /**
+   * Establece un voto favorable hacia el destino de viaje.
+   */
+  voteUp() {
+    this.store.dispatch(new VoteUpDestinoAction(this.destino));
+
+    return false; //Para que no recargue la pagina
+  }
+
+  /**
+   * Reinicia los contadores de votos hacia el destino de viaje.
+   */
+  votesReset() {
+    this.store.dispatch(new VotesResetDestinoAction(this.destino));
+
+    return false; //Para que no recargue la pagina
+  }
+
+  /**
+   * Establece un voto desfavorable hacia el destino de viaje.
+   */
+  voteDown() {
+    this.store.dispatch(new VoteDownDestinoAction(this.destino));
 
     return false; //Para que no recargue la pagina
   }
