@@ -24,7 +24,7 @@ export class FormDestinoViajeComponent implements OnInit {
   fg: FormGroup;
   /**
    * Longitud minima de caracteres para el validador del control "nombre". 
-   * Por defecto: 5.
+   * Por defecto: 3.
    */
   minLongitud = 3;
   /**
@@ -131,7 +131,7 @@ export class FormDestinoViajeComponent implements OnInit {
    * @param url URL de la foto del destino.
    * @returns False para que no se recargue la pagina.
    */
-  guardar(nombre: String, url: String): boolean {
+  guardar(nombre: string, url: string): boolean {
     
     let destino = new DestinoViaje(nombre, url);
     this.onItemAdded.emit(destino);

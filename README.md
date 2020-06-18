@@ -5,7 +5,7 @@ MOOC "Desarrollo de páginas con Angular" - Coursera
 Instalación de herramientas, generación de un proyecto Angular e introducción a Typescript.
 
 *-Semana 2: 
-Trabajo con formularios y validaciones, con el fin de hacer aplicaciones interactivas. Además, principios de programación reactiva, utilizando librerías como RxJs y Redux, para lograr aplicaciones que manejen un estado a nivel global para manipular los cambios en la interfaz de usuario.
+Trabajo con formularios y validaciones, con el fin de hacer aplicaciones interactivas. Además, principios de programación reactiva, utilizando librerías como RxJS y Redux, para lograr aplicaciones que manejen un estado a nivel global para manipular los cambios en la interfaz de usuario.
 
 Conceptos clave
 

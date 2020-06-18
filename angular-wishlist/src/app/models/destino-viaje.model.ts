@@ -8,7 +8,7 @@ export class DestinoViaje {
   /** Identificador del destino de viaje. */
   private id: String = uuid();
 
-  /** Variable privada que define si un destino de viaje esta seleccionado. */
+  /** Variable que define si un destino de viaje esta seleccionado. */
   private selected: boolean;
 
   /** Lista de servicios/comodidades que ofrece el destino de viaje. */
@@ -21,8 +21,8 @@ export class DestinoViaje {
   private votosNegativos: number;
 
 /*
-  nombre: String;
-  imagenUrl: String;
+  nombre: string;
+  imagenUrl: string;
 
   constructor(nombre, url) {
     this.nombre = nombre;
@@ -31,15 +31,17 @@ export class DestinoViaje {
 */
 
   /*
-   * Definir los parametros del constructor como publicos es un atajo de 
-   * TypeScript que permite obviar el "seteo" explicito de las variables de 
-   * la clase relativas a esos parametros. De esta forma, este constructor 
-   * es equivalente al codigo del constructor anterior comentado. 
+   * Definir los parametros del constructor con una visibilidad y un tipo 
+   * determinados es un atajo de TypeScript que permite generar variables en 
+   * la clase con el tipo y la visibilidad definidas. De esta forma, este 
+   * constructor es equivalente al codigo del constructor anterior comentado. 
    */
-/*constructor(public nombre: String, public imagenUrl: String) {
+/*
+  constructor(public nombre: string, public imagenUrl: string) {
   }
 */
-  constructor(public nombre: String, public imagenUrl: String) {
+
+  constructor(public nombre: string, public imagenUrl: string) {
     this.servicios = ["Desayuno", "Comida"];
     this.votosPositivos = 0;
     this.votosNegativos = 0;

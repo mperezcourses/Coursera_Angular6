@@ -50,6 +50,10 @@ export function initializeDestinosViajesState() {
  * que es un String definido en la interfaz "Action" y que, como buena 
  * practica, debe provenir de una enumeracion.
  */
+
+/**
+ * Enumeracion que define los tipos de acciones sobre los destinos de viaje.
+ */
 export enum DestinosViajesActionTypes {
   NUEVO_DESTINO = '[Destinos Viajes] Nuevo',
   ELEGIDO_FAVORITO = '[Destinos Viajes] Favorito',
@@ -66,7 +70,7 @@ export enum DestinosViajesActionTypes {
  * marcado, o no, como favorito.
  * Valores:
  *   FIRST: Se marca como favorito al primer elemento de la lista
- *   LAST: Se marca como favorito al primer elemento de la lista
+ *   LAST: Se marca como favorito al ultimo elemento de la lista
  *   SAME: No se marca a ningun elemento como NUEVO favorito. Se mantiene 
  *         el favorito que ya esta marcado.
  *   NONE: No debe haber ningun favorito. En caso de haberlo, se desmarca. 
@@ -81,8 +85,8 @@ export enum FavoritePosition {
 /** Accion para generar un nuevo destino de viaje */
 export class NuevoDestinoAction implements Action {
   type = DestinosViajesActionTypes.NUEVO_DESTINO;
-  // Permite construir un objecto NuevoDestinoAction
-  // "destino" es el destino de viaje a generar
+  // Permite construir un objecto NuevoDestinoAction.
+  // "destino" es el destino de viaje a generar.
   constructor(public destino: DestinoViaje) {}
 }
 
@@ -92,7 +96,10 @@ export class NuevoDestinoAction implements Action {
  * como parametro opcional, la posicion del destino de viaje que queremos 
  * marcar como favorito dentro de la lista de destinos de viaje. Esta 
  * posicion tiene prevalencia sobre el destino que se especifique, en caso de 
- * que se usen los dos argumentos.
+ * que se usen los dos argumentos y es un String que, aunque normalmente 
+ * recibe un valor de la enumeracion FavoritePosition, puede ser una posicion 
+ * especifica de la lista de destinos de viaje (por ejemplo, la posicion 
+ * "1" o la "5" o ...).
  */
 export class ElegidoFavoritoAction implements Action {
   type = DestinosViajesActionTypes.ELEGIDO_FAVORITO;
@@ -295,10 +302,10 @@ export function reducerDestinosViajes(
         (dest) => {
           // Se compara por el identificador del destino
           if(dest.getId() === destinoABorrar.getId()) {
-            return true; // Devuelve la posicion
+            return true; // findIndex devuelve la posicion
           }
 
-          return false; // Devuelve -1
+          return false; // findIndex devuelve -1
         }
       );
 
@@ -403,8 +410,9 @@ export class DestinosViajesEffects {
      * "withLatestFrom" para prevenir que el selector ("select(...)") se lance 
      * hasta que se dispare la accion correcta 
      * (https://ngrx.io/guide/effects#incorporating-state).
-     * "of(x)" genera un Observable de sus argumentos. Por ejemplo, 
-     * "of(action)" genera el Observable "action" (action$).
+     * "of(x, y, z, ...)" genera una instancia de Observable que emite 
+     * sincronicamente los valores proporcionados como argumento. Por ejemplo, 
+     * "of(action)" genera un Observable que emite "action".
      */
     concatMap((action: BorrarDestinoAction) => of(action).pipe(
       withLatestFrom(this.state.pipe(select(estado => estado.destinos.items)))

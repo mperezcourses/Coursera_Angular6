@@ -122,10 +122,20 @@ export class DestinosApiClient {
   */
 
   // Al usar el Store, se usan estos metodos:
+  /**
+   * Permite generar un nuevo destino de viaje.
+   * 
+   * @param d Destino de viaje a generar.
+   */
   add(d: DestinoViaje) {
     this.store.dispatch(new NuevoDestinoAction(d));
   }
 
+  /**
+   * Permite borrar un destino de viaje.
+   * 
+   * @param d Destino de viaje a borrar.
+   */
   remove(d: DestinoViaje) {
     this.store.dispatch(new BorrarDestinoAction(d));
   }

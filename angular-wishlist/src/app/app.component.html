@@ -39,9 +39,11 @@
 
   <!-- 
     Hora actual. Renderizado diferido de HTML a través de intervalos.
-    "async" permite que el motor de plantillas de Angular se mantenga 
-    al tanto de los cambios en la variable "fecha" y los redibuje en 
-    la plantilla.
+    "async" (AsyncPipe) permite que el motor de plantillas de Angular 
+    se mantenga al tanto de los cambios en la variable "fecha" y los 
+    redibuje en la plantilla. AsyncPipe realiza la suscripcion al 
+    Observable fecha y devuelve el ultimo valor que ese Observable va 
+    emitiendo.
   -->
   <span>Fecha: {{fecha | async}}</span>
 </div>

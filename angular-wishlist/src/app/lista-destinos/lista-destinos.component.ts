@@ -102,13 +102,16 @@ export class ListaDestinosComponent implements OnInit {
       });
 
     /*
-     * "this.store.pipe()" devuelve un Observable, en este caso sobre los 
-     * destinos de viaje que gestiona la aplicacion (se seleccionan solo estos 
-     * de entre todos los objetos que hay en el Store) y se procede a la 
-     * suscripcion a sus cambios. Por lo tanto, cuando se modifica esta lista, 
-     * se llamara a "setAllDestinosViaje" pasandole como argumento la nueva 
-     * lista de destinos de viaje para que se pueda actualizar por pantalla.
-     * Esto permite, por ejemplo, que la DevTools de Redux 
+     * La funcion "pipe()" permite ejecutar los operadores que se le pasen 
+     * como argumento de manera que se ejecuten de forma secuencial, como si 
+     * se tratara de una unica funcion. El operador "select()" devuelve un 
+     * Observable, en este caso sobre los destinos de viaje que gestiona la 
+     * aplicacion (se seleccionan solo estos de entre todos los objetos que 
+     * hay en el Store) y se procede a la suscripcion a sus cambios. Por lo 
+     * tanto, cuando se modifica esta lista, se llamara a 
+     * "setAllDestinosViaje" pasandole como argumento la nueva lista de 
+     * destinos de viaje para que se pueda actualizar por pantalla. Esto 
+     * permite, por ejemplo, que la DevTools de Redux 
      * ("@ngrx/store-devtools") sea capaz de mostrar, de manera visual en el 
      * navegador, una linea temporal donde se van sucediendo los cambios en 
      * la lista.
@@ -144,7 +147,7 @@ export class ListaDestinosComponent implements OnInit {
     this.suscripcionAcciones = actionsSubject.pipe(
       ofType(DestinosViajesActionTypes.BORRAR_DESTINO)
     ).subscribe((action) => {
-      // Codigo a ejecutar despues de completarse de la accion y sus 
+      // Codigo a ejecutar despues de completarse la accion y sus 
       // acciones derivadas.
       this.updates.push("El elemento borrado ha sido " + 
         (action as BorrarDestinoAction).destino.nombre);
